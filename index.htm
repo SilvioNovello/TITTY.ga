@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html>
+    <head>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+		<meta name="HandheldFriendly" content="true" />
+        <title>Web Server Mansarda</title>
+        <script>
+		var strOUT = ["","","","","","","",""];
+		var OUT_state = [0,0,0,0,0,0,0,0];
+		var connectionCounter ;
+		var strText = "";
+		function start(){
+			GetArduinoIO();
+		}
+
+		function GetArduinoIO()
+		{			
+			if(connectionCounter > 2){
+			
+						document.getElementById("STATO").innerHTML = "NON CONNESSO";
+						document.getElementById("ledconn").style.backgroundColor = "#262626";
+						document.getElementById("COVER").style.display = "block";
+						
+			}
+			nocache = "&nocache=" + Math.random() * 1000000;
+			var request = new XMLHttpRequest();
+			request.onreadystatechange = function()
+			{
+				if (this.readyState == 4) {									
+					if (this.status == 200) {
+					
+						document.getElementById("STATO").innerHTML = "CONNESSO";
+						document.getElementById("ledconn").style.backgroundColor = "#ffc800";
+						document.getElementById("COVER").style.display = "none";
+						connectionCounter = 0;
+						
+						if (this.responseXML != null) {
+							// XML file received - contains OUT states
+							
+							// OUT 1
+							for (var xmlIndex = 0; xmlIndex < 8; xmlIndex++){
+								if (this.responseXML.getElementsByTagName('OUT')[xmlIndex].childNodes[0].nodeValue === "on") {								
+									OUT_state[xmlIndex] = 1;
+									document.getElementById("OUT" + (xmlIndex+1).toString()).style.background="#ffc800";
+									document.getElementById("OUT" + (xmlIndex+1).toString()).style.color="#262626";
+								}
+								else {
+									OUT_state[xmlIndex] = 0;
+									document.getElementById("OUT" + (xmlIndex+1).toString()).style.background="#262626";
+									document.getElementById("OUT" + (xmlIndex+1).toString()).style.color="#f5f5f5";
+								}
+							}
+							
+													
+							for (var xmlIndex = 0; xmlIndex < 8; xmlIndex++){
+								document.getElementById("TIME" + (xmlIndex+1).toString()).placeholder = msToTime(this.responseXML.getElementsByTagName('TIME')[xmlIndex].childNodes[0].nodeValue);
+								if(this.responseXML.getElementsByTagName('TIME')[xmlIndex].childNodes[0].nodeValue != 0 && OUT_state[xmlIndex] == 1){
+									document.getElementById("TIME" + (xmlIndex+1).toString()).style.background = "#ffc800";
+									document.getElementById("TIME" + (xmlIndex+1).toString()).style.borderColor = "#262626";
+								}else {
+									document.getElementById("TIME" + (xmlIndex+1).toString()).style.background = "#adadad";
+									document.getElementById("TIME" + (xmlIndex+1).toString()).style.borderColor = "#9b9a94";								
+								}
+							}
+																										
+						}
+					}
+				} else {
+					connectionCounter++;					
+				}
+			}
+			
+			// send HTTP GET request with outs to switch on/off if any
+			request.open("GET", "ajax_inputs" + strOUT[0] + strOUT[1]+ strOUT[2]+ strOUT[3]+ strOUT[4]+ strOUT[5]+ strOUT[6]+ strOUT[7] + strText + nocache, true);
+			request.send(null);
+			setTimeout('GetArduinoIO()', 1000);
+			strOUT = ["","","","","","","",""];
+			strText = "";
+		}
+		
+		function msToTime(duration) {			
+			var minutes = parseInt((duration/(1000*60))%60);
+			var hours = parseInt((duration/(1000*60*60))%24);
+			var seconds = parseInt((duration/1000)%60);
+
+			hours = (hours < 10) ? "0" + hours : hours;
+			minutes = (minutes < 10) ? "0" + minutes : minutes;
+			seconds = (seconds < 10) ? "0" + seconds : seconds;
+
+			return "" + hours + ":" + minutes + ":" + seconds;
+		}
+		function GetButton(GBIndex){
+			if (OUT_state[GBIndex-1] === 1) {
+				OUT_state[GBIndex-1] = 0;
+				strOUT[GBIndex-1] = "&OUT"+ (GBIndex.toString()) + "=0" ;
+			}
+			else {
+				OUT_state[GBIndex-1] = 1;
+				strOUT[GBIndex-1] = "&OUT"+ (GBIndex.toString()) + "=1";
+			}
+		}
+		
+
+		function SendTime(STIndex){
+								
+					if (document.getElementById("TIME" + (STIndex).toString()).value.match(/^([0-1][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$/)) {
+						alert("TEMPO IMPOSTATO CORRETTAMENTE");
+						strText = "&tim" + (STIndex).toString() + "="+ document.getElementById("time_form" + (STIndex).toString()).form_time.value + "&end=end";
+						document.getElementById("TIME" + (STIndex).toString()).value = "";
+					} else {
+						alert("ERRORE! INSERIRE IL TEMPO NEL FORMATO HH:MM:SS CON UN VALORE COMPRESO TRA 00:00:00 E 23:59:59");
+						document.getElementById("TIME" + (STIndex).toString()).value = "";
+					}		
+							
+		}
+		 				
+	</script>
+	<style>	
+		body {
+			text-align:center;
+			background-color:#dcdcdc;
+			color: #262626;
+			}		
+		.container{		
+			width: 100%;
+			height: auto;
+			display: flex;
+			flex-direction: row;
+			justify-content: space-around;
+			flex-flow: wrap;	
+			padding-top: 13em;			
+		}		
+		.box{			
+			padding: 0.2em;
+			width: 20%;
+			height: auto;			
+			margin: 20px;
+			box-sizing: border-box;			
+		}	
+		h1{
+			text-align: center;
+			font-family:Arial, "Trebuchet MS", Helvetica, sans-serif;
+			font-size: 2em;
+		}
+		h2{
+			text-align: center;
+			font-family:Arial, "Trebuchet MS", Helvetica, sans-serif;
+			font-size: 1.5em;
+		}
+		p{
+			text-align: center;
+			font-family:Arial, "Trebuchet MS", Helvetica, sans-serif;
+			font-size: 1em;
+			font-weight: bold;
+		}
+		.dot {
+			height: 2em;
+			width: 2em;
+			background-color: #262626;
+			border-radius: 50%; 
+			border-style: solid;
+			border-width: thin;
+			display: block;
+			margin: auto;
+		}
+		button
+		{
+			color: #f5f5f5;
+			font-size: 2em;
+			text-decoration:none;
+			width:98%;
+			height:6em;
+			border-color:black;
+			border-top:2px solid;
+			border-bottom:2px solid;
+			border-right:2px solid;
+			border-left:2px solid;
+			border-radius:10px 10px 10px;
+			-o-border-radius:10px 10px 10px;
+			-webkit-border-radius:10px 10px 10px;
+			font-family:"Trebuchet MS",Arial, Helvetica, sans-serif;
+			-moz-border-radius:10px 10px 10px;
+			background-color:#262626;
+			text-align:center;	
+			box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+		}
+		textarea {
+			color: #262626;
+			font-size: 2em;
+			resize: none;
+			text-decoration:none;
+			width: 98%;	
+			vertical-align:middle;
+			border-color:black;
+			border-top:2px solid;
+			border-bottom:2px solid;
+			border-right:2px solid;
+			border-left:2px solid;
+			border-radius:10px 10px 10px;
+			-o-border-radius:10px 10px 10px;
+			-webkit-border-radius:10px 10px 10px;
+			font-family:"Trebuchet MS",Arial, Helvetica, sans-serif;
+			-moz-border-radius:10px 10px 10px;
+			background-color:#adadad;
+			text-align:center;
+			-webkit-box-sizing: border-box;
+			-moz-box-sizing: border-box;
+			box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+		}		
+		input {
+			color: #f5f5f5;
+			font-size: 2em;
+			resize: none;
+			text-decoration:none;
+			width:98%;
+			height:2em;
+			border-color:black;
+			border-top:2px solid;
+			border-bottom:2px solid;
+			border-right:2px solid;
+			border-left:2px solid;
+			border-radius:10px 10px 10px;
+			-o-border-radius:10px 10px 10px;
+			-webkit-border-radius:10px 10px 10px;
+			font-family:"Trebuchet MS",Arial, Helvetica, sans-serif;
+			-moz-border-radius:10px 10px 10px;
+			background-color:#262626;
+			box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+		}		
+		::placeholder {
+			color: #262626;
+		}
+		
+
+
+		.dimmed {
+			z-index: 10;
+			position:fixed;
+			height: 100%;
+			top: 0;
+			left: 0;
+			right: 0;
+			background: rgba(255,255,255,0.4);
+		}
+		
+		.head {
+			background-color: #adadad;
+			position: fixed;  
+			width: 100%;
+			top: 0;
+			left: 0;
+			right: 0;
+			padding-bottom: 1em;
+			border-bottom-style: solid;
+			border-color: #3f3f3f;
+			box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+		}
+
+		
+		button:link {color:#f5f5f5;} 
+		button:visited {color:#f5f5f5;} 
+		button:active {color:#ffc800;} 
+		
+		input:link {color:#f5f5f5;} 
+		input:visited {color:#f5f5f5;} 
+		input:active {color:#ffc800;} 
+		
+		@media(min-width: 901px) and (max-width: 1630px){
+			.box {
+				width: 40%;
+			}
+		}
+		@media(min-device-width: 1081px) and (max-device-width: 1600px){
+			.box {
+				width: 40%;
+			}
+		}
+
+		@media(max-width: 900px){
+			.box {
+				width: 90%;
+			}
+		}
+		@media(max-device-width: 1080px){
+			.box {
+				width: 90%;
+			}
+		}
+		
+	</style>
+    </head>
+    <body onload="start()">
+	<div id="COVER" class="dimmed">
+	</div>
+		<div class="head">
+        <h1>MANSARDA</h1>    
+		<h2>Web Server</h2>
+		<p id="STATO" style="display:block;"></p>
+		<p id="PROVA" style="display:block;"></p>
+		<span id="ledconn" class="dot"></span>
+		</div>	
+			<div class="container"> 
+					<div class="box"> 
+					<button type="button" id="OUT1" onclick="GetButton(1)">OUT 1</button>
+				<form id="time_form1" name="frmTime">
+					<textarea id="TIME1" name="form_time" rows="1" maxlength="8" placeholder="hh:mm:ss"></textarea>
+				</form>
+				<input id="SEND1" type="submit" value="INVIO" onclick="SendTime(1)" />
+					</div>
+					
+					<div class="box"> 
+					<button type="button" id="OUT2" onclick="GetButton(2)">OUT 2</button>
+				<form id="time_form2" name="frmTime">
+					<textarea id="TIME2" name="form_time" rows="1" maxlength="8" placeholder="hh:mm:ss"></textarea>
+				</form>
+				<input type="submit" value="INVIO" onclick="SendTime(2)" />
+					</div>	
+					
+					<div class="box"> 
+					<button type="button" id="OUT3" onclick="GetButton(3)">OUT 3</button>
+				<form id="time_form3" name="frmTime">
+					<textarea id="TIME3" name="form_time" rows="1" maxlength="8" placeholder="hh:mm:ss"></textarea>					
+				</form>
+				<input type="submit" value="INVIO" onclick="SendTime(3)" />
+					</div>
+					
+					<div class="box"> 
+					<button type="button" id="OUT4" onclick="GetButton(4)">OUT 4</button>
+				<form id="time_form4" name="frmTime">
+					<textarea id="TIME4" name="form_time" rows="1" maxlength="8" placeholder="hh:mm:ss"></textarea>					
+				</form>
+				<input type="submit" value="INVIO" onclick="SendTime(4)" />
+					</div>
+				
+					<div class="box"> 
+					<button type="button" id="OUT5" onclick="GetButton(5)">OUT 5</button>
+				<form id="time_form5" name="frmTime">
+					<textarea id="TIME5" name="form_time" rows="1" maxlength="8" placeholder="hh:mm:ss"></textarea>					
+				</form>
+				<input type="submit" value="INVIO" onclick="SendTime(5)" />
+					</div>
+					
+					<div class="box"> 
+					<button type="button" id="OUT6" onclick="GetButton(6)">OUT 6</button>
+				<form id="time_form6" name="frmTime">
+					<textarea id="TIME6" name="form_time" rows="1" maxlength="8" placeholder="hh:mm:ss"></textarea>
+				</form>
+					<input type="submit" value="INVIO" onclick="SendTime(6)" />				
+					</div>
+				
+					<div class="box"> 
+					<button type="button" id="OUT7" onclick="GetButton(7)">OUT 7</button>
+				<form id="time_form7" name="frmTime">
+					<textarea id="TIME7" name="form_time" rows="1" maxlength="8" placeholder="hh:mm:ss"></textarea>					
+				</form>
+				<input type="submit" value="INVIO" onclick="SendTime(7)" />
+					</div>
+					
+					<div class="box"> 
+					<button type="button" id="OUT8" onclick="GetButton(8)">OUT 8</button>
+				<form id="time_form8" name="frmTime">
+					<textarea id="TIME8" name="form_time" rows="1" maxlength="8" placeholder="hh:mm:ss"></textarea>					
+				</form>
+				<input type="submit" value="INVIO" onclick="SendTime(8)" />
+					</div>
+				</div>	
+			
+    </body>
+</html>
